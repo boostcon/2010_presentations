@@ -1,0 +1,260 @@
+*
+* Examples demo-ed during the "Logic Paradigm for C++" talk by Roshan Naik
+* at BoostCon 2010
+*
+
+
+
+// ----------------------- 1st set of exmaples ----------------------
+// Fundamentals - unfication, backtracking, bi-directional args, recursion
+// ------------------------------------------------------------------
+
+
+// p's gender is g
+relation gender(lref<string> p, lref<string> g) {
+  return eq(p,"Frank") && eq(g,"male")
+     ||  eq(p,"Sam")   && eq(g,"male")
+     ||  eq(p,"Gary")  && eq(g,"male")
+     ||  eq(p,"Mary")  && eq(g,"female")
+     ||  eq(p,"Denise")&& eq(g,"female");   
+}
+
+// c is child of p
+relation child(lref<string> c, lref <string> p) {
+  return eq(c,"Sam")    && eq(p,"Mary") // Sam is child of Mary
+	  || eq(c,"Denise") && eq(p,"Mary") 
+	  || eq(c,"Sam")    && eq(p,"Frank")
+	  || eq(c,"Denise") && eq(p,"Frank")
+	  || eq(c,"Frank")  && eq(p,"Gary");
+}
+
+// f is father of c 
+relation father(lref<string> f, lref<string> c) {
+  return gender(f,"male") && child(c,f);
+}
+
+// m is mother of c 
+relation mother(lref<string> m, lref<string> c) {
+  return gender(m,"female") && child(c,m);
+}
+
+// p is parent of c
+relation parent(lref<string> p, lref<string> c) {
+    return father(p,c) || mother(p,c);  // or simply : child(c,p)
+}
+
+// a is ancestor of d
+relation ancestor(lref<string> a, lref<string> d) {
+    lref<string> x;
+    return parent(a,d) 
+        || parent(a,x) && recurse(ancestor,x,d); // recursion
+}
+
+
+
+
+
+    //1) Is Sam male ?
+    relation sm = gender("Sam", "male"); 
+    if(sm())
+        cout << "Yes, Sam is male";
+    else 
+        cout << "No Sam is not";
+
+
+        
+    //2) - find Sam's gender
+    lref<string> g;  // NOT initialized to any value.
+    relation sg = gender("Sam", g);
+    if(sg())
+        cout << "Sam's gender is : " << *g << "\n";
+    else
+	    cout << "Not known\n";
+
+
+    //3) - find all males
+    lref<string> p;
+    relation males = gender(p, "male");
+    while(males())
+        cout << *p << " ";
+	
+
+    //4) all person-gender pairs
+    lref<string> p,g;
+    relation males = gender(p, g);
+    while(males())
+        cout << *p << " " << *g << "\n";
+
+    
+    //5) Recursion
+    lref<string> a;
+    relation as = ancestor(a,"Sam"); // ancestors of Sam
+    while(as())
+        cout << *a << " ";
+
+
+
+
+
+
+// ----------------------- 2nd set of exmaples ----------------------
+
+
+
+
+// 1)  Print all even numbers in a range
+// ------------------------
+
+
+// Imperatively
+
+template<typename Func>
+list<int> getMatchingNumbers(int min, int max, Func pred) {
+    list<int> result;
+    for(int i=min; i<=max; ++i)
+        if(pred(i))
+            result.push_back(i);
+    return result;
+}
+
+bool isEven(int i) {
+    return i%2==0;
+}
+
+    list<int> even = getMatchingNumbers(1,10, isEven);
+    for(list<int>::iterator i = even.begin(); i!= even.end(); ++i)
+        cout << *i << " ";
+
+
+
+// Declaratively
+    
+    lref<int> j;
+    relation evens = range(j,1,10) && predicate(isEven,j);
+
+//or simply
+    relation evens = range(j,1,10) && predicate(j%2==0);
+
+
+
+
+// 2) Pythagoras Triplets
+// ------------------------
+    lref<int> x,y,z;        // you can initialize any of these to constrain solutions
+    int max=30;
+    relation pythTriplets = range(x,1,max) && range(y,1,max)  && range(z,1,max) 
+                            && ( predicate(x*x+y*y==z*z) || predicate(z*z+y*y==x*x) );
+    while(pythTriplets())
+        cout << *x << " " << *y << " " << *z << "\n";
+
+
+
+
+
+
+// 3)  Working with iterators and pointers
+// -------------------------------------------
+    // iterating over sequences
+    int ai[] = { 0,1,2,3 };
+    vector<int> vi(ai, ai+4);
+    
+    lref<int> i;
+    relation r = item(i, vi.begin(), vi.end());  // iterators
+    while(r())
+        cout << *i << " ";
+
+    relation r = item(i, ai, ai+4);  // pointers
+    while(r())
+        cout << *i << " ";
+
+
+    // intersection of two arrays
+    int arr1[] = {1,2,3,4};
+    int arr2[] = {6,3,7,1,9};
+
+    lref<int> i, j;
+    item(i, arr1+0, arr1+4) && item(j, arr2+0, arr2+5) && predicate(i==j);
+
+
+    // simpler intersection - no need for j
+    item(i, arr1+0, arr1+4) && item(i, arr2+0, arr2+5);
+
+    
+    // union
+    item(i, arr1+0, arr1+4) || item(i, arr2+0, arr2+5);
+
+
+    // union - no duplicates
+    ( item(i, arr1+0, arr1+4) || item(i, arr2+0, arr2+5) ) &&  unique(i);
+
+
+
+    // Nicer syntax : no need for iterators if we work with lref<container>
+    lref<vector<int> > vi = vector<int>(arr1, arr1+4);
+    lref<vector<int> > vj = vector<int>(arr2, arr2+5);
+
+    item(i, vi) && item(j, vj) && predicate(i==j);
+
+
+    // write all values in a container
+    writeAll(vi);  // default delimiter=", " and terminator="\n"
+
+
+
+    // No iterators!!
+    // Container -> filter -> transform -> output stream
+    item(i,vi) && predicate(i%2==0) && eq_f(j, i*i) && write(j) && write(",");
+
+
+
+// 4)  Take Left operator :  >>=
+// -------------------------------------------
+
+    // items in sorted order
+    item(i,vec) >>= order(i);
+
+    // factorial of 5
+    range(n,1,5) >>= reduce(n, std::multiplies<int>());
+
+
+
+    //  -- group_by -- 
+    char firstChar(const string& s) { return s[0]; }
+    size_t str_len(const string& s) { return s.size(); }
+
+    lref<vector<string> > nums = //{"One","Two","Three".. } 
+
+    // Single level grouping
+    lref<group<char,string> > g; // type of each group
+
+    lref<string> n;
+
+    // Declarative reading: group n by firstChar into g
+    relation r = item(n,nums) >>= group_by(n, &firstChar, g);
+
+    while(r()) {  // iterate over each group
+        cout << "\n" << g->key<< ": ";
+        writeAll(g);
+    }
+
+
+
+
+    // -- Nested grouping – two level
+    lref<group<char,group<size_t,string> > > g;
+
+    // Declarative reading:  group n by firstChar into g then by str_len
+    relation r = item(n,nums) >>= group_by(n, firstChar, g).then(str_len); 
+
+    while(r()) {
+       lref<group<size_t,string> > g2; // inner group
+       relation subgroups = item(g2,g);
+       while(subgroups()) { 
+           writeAll(g2)(); // print all items in subgroup
+       }
+    }
+
+
+    // Nested grouping – three level
+    lref<group<char,group<size_t, group< bool , string> > > > g;
+    item(n,nums) >>= group_by(n, firstChar, g).then(str_len).then(somePrediacte);
