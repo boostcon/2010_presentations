@@ -1,6 +1,6 @@
 # BoostCon 2010 Presentations
 
-  * [Call for Participation](http://www.boostcon.com/site-media/var/sphene/sphwiki/attachment/2009/12/11/4th_annual_Boost_Conference_2010.pdf)
+  * [Call for Participation](http://https://github.com/boostcon/2010_presentations/raw/master/4th_annual_Boost_Conference_2010.pdf)
   * Software Transactional Memory was a major theme at this year's BoostCon.  [Draft C++ STM spec](http://www-949.ibm.com/software/rational/cafe/docs/DOC-3222 "Draft C++ STM spec").
 
 Monday Presentations
